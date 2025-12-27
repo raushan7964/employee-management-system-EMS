@@ -1,0 +1,85 @@
+import React, { useState, useEffect } from 'react'
+import { getTaskStats } from '../../utils/taskStorage'
+
+const TaskListNumber = ({ employee }) => {
+  const [stats, setStats] = useState({
+    total: 0,
+    new: 0,
+    inProgress: 0,
+    completed: 0,
+    failed: 0,
+  })
+
+  useEffect(() => {
+    const taskStats = getTaskStats()
+    setStats(taskStats)
+  }, [])
+
+  return (
+    <section className="w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-md p-6 border-2 border-blue-100 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-12 w-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
+              {stats.new}
+            </div>
+            <span className="text-xs font-semibold text-blue-600 bg-blue-100 px-2 py-1 rounded-full">NEW</span>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{stats.new}</div>
+          <div className="text-sm text-slate-600 font-medium">New Tasks</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl shadow-md p-6 border-2 border-yellow-100 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-12 w-12 rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
+              {stats.inProgress}
+            </div>
+            <span className="text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-1 rounded-full">ACTIVE</span>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{stats.inProgress}</div>
+          <div className="text-sm text-slate-600 font-medium">In Progress</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-md p-6 border-2 border-green-100 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-12 w-12 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
+              {stats.completed}
+            </div>
+            <span className="text-xs font-semibold text-green-700 bg-green-100 px-2 py-1 rounded-full">DONE</span>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{stats.completed}</div>
+          <div className="text-sm text-slate-600 font-medium">Completed</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl shadow-md p-6 border-2 border-red-100 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="h-12 w-12 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
+              {stats.failed}
+            </div>
+            <span className="text-xs font-semibold text-red-700 bg-red-100 px-2 py-1 rounded-full">FAILED</span>
+          </div>
+          <div className="text-3xl font-bold text-slate-800 mb-1">{stats.failed}</div>
+          <div className="text-sm text-slate-600 font-medium">Failed</div>
+        </div>
+      </div>
+
+      <div className="mt-4 bg-white rounded-xl shadow-md p-4 border border-slate-100">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-semibold text-slate-600">Total Tasks</span>
+          <span className="text-2xl font-bold text-indigo-600">{stats.total}</span>
+        </div>
+        <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+            style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }}
+          />
+        </div>
+        <div className="mt-1 text-xs text-slate-500 text-right">
+          {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% Complete
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export default TaskListNumber
