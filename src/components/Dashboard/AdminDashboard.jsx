@@ -111,7 +111,7 @@ const AdminDashboard = () => {
 
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard Overviews</h1>
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard Overview</h1>
         <p className="text-slate-600">Monitor team performance and task progress</p>
       </div>
 
