@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { getTasks, getTaskStats } from '../utils/taskStorage'
 import { getEmployees } from '../utils/employeeStorage'
+import { FaCheck, FaTrophy, FaClipboardList } from 'react-icons/fa'
 
 const Reports = ({ userRole, currentEmployee }) => {
   const [stats, setStats] = useState({ total: 0, new: 0, inProgress: 0, completed: 0, failed: 0 })
@@ -133,7 +134,7 @@ const Reports = ({ userRole, currentEmployee }) => {
         <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-md p-6 border-2 border-green-100">
           <div className="text-sm font-semibold text-green-700 mb-2">Completed</div>
           <div className="text-4xl font-bold text-slate-800">{stats.completed}</div>
-          <div className="text-xs text-green-600 mt-2">✓ {completionRate}% completion rate</div>
+          <div className="text-xs text-green-600 mt-2 flex items-center justify-center gap-1"><FaCheck /> {completionRate}% completion rate</div>
         </div>
 
         <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl shadow-md p-6 border-2 border-yellow-100">
@@ -214,7 +215,7 @@ const Reports = ({ userRole, currentEmployee }) => {
             <h3 className="text-lg font-bold text-slate-800 mb-6">Top Performers</h3>
             {topPerformers.length === 0 ? (
               <div className="text-center py-8 text-slate-500">
-                <div className="text-4xl mb-2">🏆</div>
+                <FaTrophy className="text-4xl mb-2 text-yellow-500 mx-auto" />
                 <div className="text-sm">No performance data yet</div>
               </div>
             ) : (
@@ -250,7 +251,7 @@ const Reports = ({ userRole, currentEmployee }) => {
         <h3 className="text-lg font-bold text-slate-800 mb-6">Recent Activity</h3>
         {recentActivity.length === 0 ? (
           <div className="text-center py-8 text-slate-500">
-            <div className="text-4xl mb-2">📋</div>
+            <FaClipboardList className="text-4xl mb-2 text-slate-400 mx-auto" />
             <div className="text-sm">No recent activity</div>
           </div>
         ) : (

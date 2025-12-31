@@ -1,5 +1,6 @@
 // Toast Notification Component
 import React, { useEffect } from 'react'
+import { FaCheckCircle, FaTimesCircle, FaInfoCircle, FaExclamationTriangle, FaTimes } from 'react-icons/fa'
 
 const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
   useEffect(() => {
@@ -18,10 +19,10 @@ const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
   }
 
   const icons = {
-    success: '✓',
-    error: '✕',
-    info: 'ℹ',
-    warning: '⚠',
+    success: <FaCheckCircle />,
+    error: <FaTimesCircle />,
+    info: <FaInfoCircle />,
+    warning: <FaExclamationTriangle />,
   }
 
   return (
@@ -37,7 +38,7 @@ const Toast = ({ message, type = 'success', onClose, duration = 3000 }) => {
           onClick={onClose}
           className="text-white hover:text-gray-200 transition-colors text-xl font-bold"
         >
-          ×
+          <FaTimes />
         </button>
       </div>
       <style jsx>{`

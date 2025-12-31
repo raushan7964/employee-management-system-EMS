@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { FaChartBar, FaTasks, FaUsers, FaChartLine, FaCog, FaSignOutAlt, FaBars } from 'react-icons/fa'
 
 const MainLayout = ({ userRole, currentEmployee }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -15,11 +16,11 @@ const MainLayout = ({ userRole, currentEmployee }) => {
   const userInitial = userName.charAt(0).toUpperCase()
 
   const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/tasks', label: 'Tasks', icon: '✓' },
-    ...(userRole === 'admin' ? [{ path: '/employees', label: 'Employees', icon: '👥' }] : []),
-    { path: '/reports', label: 'Reports', icon: '📈' },
-    { path: '/settings', label: 'Settings', icon: '⚙️' },
+    { path: '/dashboard', label: 'Dashboard', icon: <FaChartBar /> },
+    { path: '/tasks', label: 'Tasks', icon: <FaTasks /> },
+    ...(userRole === 'admin' ? [{ path: '/employees', label: 'Employees', icon: <FaUsers /> }] : []),
+    { path: '/reports', label: 'Reports', icon: <FaChartLine /> },
+    { path: '/settings', label: 'Settings', icon: <FaCog /> },
   ]
 
   return (
@@ -31,9 +32,7 @@ const MainLayout = ({ userRole, currentEmployee }) => {
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
+            <FaBars className="w-6 h-6" />
           </button>
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-600 to-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-lg">
@@ -101,7 +100,7 @@ const MainLayout = ({ userRole, currentEmployee }) => {
               onClick={() => setShowLogoutModal(true)}
               className="w-full px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg text-sm font-semibold transition-colors duration-200 flex items-center justify-center gap-2"
             >
-              <span>🚪</span>
+              <FaSignOutAlt />
               <span>Logout</span>
             </button>
           </div>
@@ -129,7 +128,7 @@ const MainLayout = ({ userRole, currentEmployee }) => {
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
             <div className="text-center mb-6">
               <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-                <span className="text-3xl">🚪</span>
+                <FaSignOutAlt className="text-3xl text-red-500" />
               </div>
               <h3 className="text-xl font-bold text-slate-800 mb-2">Confirm Logout</h3>
               <p className="text-slate-600 text-sm">Are you sure you want to logout?</p>

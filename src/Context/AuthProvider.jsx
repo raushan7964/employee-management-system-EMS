@@ -3,6 +3,7 @@ import { createContext, useState } from 'react'
 import { getLocalStorage, setLocalStorage } from '../utils/localStorage'
 import { initializeSampleEmployees, getEmployees } from '../utils/employeeStorage'
 import { initializeSampleTasks } from '../utils/taskStorage'
+import { initializeSampleAdmins, getAdmins } from '../utils/adminStorage'
 
 export const AuthContext = createContext()
 
@@ -10,17 +11,16 @@ const AuthProvider = ({ children }) => {
   const [userData, setUserData] = useState(null)
   
   useEffect(() => {
-    // Initialize sample data if needed
+    // Initialize sample data safely (only if empty)
     initializeSampleTasks()
     initializeSampleEmployees()
+    initializeSampleAdmins()
     
-    // Read stored employees and admin entries
-    setLocalStorage()
-    const employees = getEmployees() // Use storage utility instead
-    const admin = getLocalStorage('admin')
+    // Read stored data
+    const employees = getEmployees()
+    const admin = getAdmins()
     
     setUserData({ employees, admin })
-    console.log('Initialized data:', { employeeCount: employees.length, admin })
   }, [])
 
   return (

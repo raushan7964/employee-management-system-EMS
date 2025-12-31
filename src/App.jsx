@@ -1,48 +1,58 @@
 import { useState, useEffect, useContext } from 'react'
 import { BrowserRouter } from 'react-router-dom'
 import Login from './components/Auth/Login'
+import Register from './components/Auth/Register'
 import AppRoutes from './Routes/Route'
 import { AuthContext } from './Context/AuthProvider.jsx'
+import { getEmployees } from './utils/employeeStorage'
+import { getAdmins } from './utils/adminStorage'
 
 function App() {
   const [user, setUser] = useState(null) // 'admin' | 'employee' | null
   const [currentEmployee, setCurrentEmployee] = useState(null)
+  const [isRegistering, setIsRegistering] = useState(false)
   const authData = useContext(AuthContext)
 
   useEffect(() => {
-    if (authData) {
-      const raw = localStorage.getItem('loggedInUser')
-      if (raw) {
-        try {
-          const parsed = JSON.parse(raw)
-          setUser(parsed.role || null)
-          if (parsed.employee) setCurrentEmployee(parsed.employee)
-        } catch (e) {
-          // malformed localStorage value
-          localStorage.removeItem('loggedInUser')
+    // Only check localStorage on initial load, independent of AuthContext for user session
+    const raw = localStorage.getItem('loggedInUser')
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw)
+        // Verify user still exists in storage (in case deleted)
+        if (parsed.role === 'employee' && parsed.employee) {
+          const freshData = getEmployees().find(e => e.email === parsed.employee.email)
+          if (freshData) {
+            setUser('employee')
+            setCurrentEmployee(freshData) // Use fresh data
+          } else {
+            localStorage.removeItem('loggedInUser')
+          }
+        } else if (parsed.role === 'admin') {
+          setUser('admin')
         }
+      } catch (e) {
+        localStorage.removeItem('loggedInUser')
       }
     }
   }, [authData])
 
   const handleLogin = (email, password) => {
-    if (!authData) return alert('Auth data not loaded')
+    // Read directly from storage to ensure we have simplest source of truth
+    const admins = getAdmins()
+    const employees = getEmployees()
 
-    // admin check
-    const adminMatch = Array.isArray(authData.admin)
-      ? authData.admin.find((a) => email === a.email && password === a.password)
-      : null
-
+    // 1. Admin check
+    const adminMatch = admins.find((a) => email === a.email && password === a.password)
+    
     if (adminMatch) {
       setUser('admin')
       localStorage.setItem('loggedInUser', JSON.stringify({ role: 'admin' }))
       return
     }
 
-    // employee check
-    const employeeMatch = Array.isArray(authData.employees)
-      ? authData.employees.find((e) => email === e.email && password === e.password)
-      : null
+    // 2. Employee check
+    const employeeMatch = employees.find((e) => email === e.email && password === e.password)
 
     if (employeeMatch) {
       setUser('employee')
@@ -62,11 +72,23 @@ function App() {
     setCurrentEmployee(null)
     localStorage.removeItem('loggedInUser')
   }
+  
+  const toggleView = () => setIsRegistering(!isRegistering)
 
   return (
     <BrowserRouter>
       {!user ? (
-        <Login handleLogin={handleLogin} />
+        isRegistering ? (
+          <Register 
+            onRegisterSuccess={() => setIsRegistering(false)} 
+            toggleView={toggleView} 
+          />
+        ) : (
+          <Login 
+            handleLogin={handleLogin} 
+            toggleView={toggleView} 
+          />
+        )
       ) : (
         <AppRoutes 
           userRole={user} 

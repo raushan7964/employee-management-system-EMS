@@ -5,6 +5,7 @@ import React, { useState, useEffect } from 'react'
 import { getTasks, updateTask } from '../../utils/taskStorage'
 import { getEmployees } from '../../utils/employeeStorage'
 import Toast from '../common/Toast'
+import { FaClock, FaCheckCircle, FaCheck, FaTimes, FaChartBar } from 'react-icons/fa'
 
 const AdminDashboard = () => {
   const [showModal, setShowModal] = useState(false)
@@ -37,8 +38,6 @@ const AdminDashboard = () => {
       (task) => task.approvalStatus === 'pending' || task.status === 'pending-approval'
     )
 
-    console.log('Pending approval tasks found:', pending.length)
-    console.log('Pending tasks:', pending)
     setPendingTasks(pending)
   }
 
@@ -126,7 +125,7 @@ const AdminDashboard = () => {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-full bg-orange-500 text-white flex items-center justify-center text-2xl">
-                ⏰
+                <FaClock />
               </div>
               <div>
                 <h3 className="text-xl font-bold text-slate-800">Pending Approvals</h3>
@@ -141,7 +140,7 @@ const AdminDashboard = () => {
 
           {pendingTasks.length === 0 ? (
             <div className="bg-white rounded-lg p-8 text-center">
-              <div className="text-6xl mb-4">✅</div>
+              <FaCheckCircle className="text-6xl text-green-500 mb-4" />
               <div className="text-lg font-semibold text-slate-800 mb-2">All Caught Up!</div>
               <div className="text-sm text-slate-600">No employee self-tasks pending approval</div>
             </div>
@@ -189,15 +188,15 @@ const AdminDashboard = () => {
                   <div className="flex gap-2">
                     <button
                       onClick={() => handleApprove(task.id)}
-                      className="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold transition-colors"
+                      className="flex-1 px-3 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                     >
-                      ✓ Approve
+                      <FaCheck /> Approve
                     </button>
                     <button
                       onClick={() => handleReject(task.id)}
-                      className="flex-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold transition-colors"
+                      className="flex-1 px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                     >
-                      ✗ Reject
+                      <FaTimes /> Reject
                     </button>
                   </div>
                 </div>
@@ -209,92 +208,81 @@ const AdminDashboard = () => {
 
       {/* Employee Performance Charts */}
       <section className="mb-8">
-        <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-100">
-          <h3 className="text-xl font-bold text-slate-800 mb-6">Employee Task Distribution</h3>
+        <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-100 overflow-hidden">
+          <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <FaChartBar className="text-indigo-600" /> Employee Task Distribution
+          </h3>
 
           {employeeStats.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
-              <div className="text-5xl mb-3">📊</div>
+              <FaChartBar className="text-5xl mx-auto mb-3 text-slate-300" />
               <div className="text-sm">No task data available yet</div>
             </div>
           ) : (
-            <div className="space-y-6">
-              {employeeStats.map((emp, idx) => {
-                const completionRate =
-                  emp.total > 0 ? ((emp.completed / emp.total) * 100).toFixed(0) : 0
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b-2 border-slate-100 text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                    <th className="py-3 px-2">Employee</th>
+                    <th className="py-3 px-2 text-center text-blue-600">New</th>
+                    <th className="py-3 px-2 text-center text-yellow-600">Active</th>
+                    <th className="py-3 px-2 text-center text-green-600">Completed</th>
+                    <th className="py-3 px-2 text-center text-red-600">Failed</th>
+                    <th className="py-3 px-2 text-center">Total</th>
+                    <th className="py-3 px-2 text-right">Completion</th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-700">
+                  {employeeStats.map((emp, idx) => {
+                    const completionRate =
+                      emp.total > 0 ? ((emp.completed / emp.total) * 100).toFixed(0) : 0
 
-                return (
-                  <div key={idx} className="border-b border-slate-100 pb-6 last:border-0 last:pb-0">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center font-bold">
-                          {emp.name.charAt(0)}
-                        </div>
-                        <div>
-                          <div className="font-semibold text-slate-800">{emp.name}</div>
-                          <div className="text-xs text-slate-500">{emp.total} total tasks</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-green-600">{completionRate}%</div>
-                        <div className="text-xs text-slate-500">completion</div>
-                      </div>
-                    </div>
-
-                    {/* Task breakdown bars */}
-                    <div className="grid grid-cols-4 gap-2 mb-2">
-                      <div className="text-center">
-                        <div className="text-xs font-semibold text-blue-700 mb-1">New</div>
-                        <div className="text-lg font-bold text-slate-800">{emp.new}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-semibold text-yellow-700 mb-1">Active</div>
-                        <div className="text-lg font-bold text-slate-800">{emp.inProgress}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-semibold text-green-700 mb-1">Done</div>
-                        <div className="text-lg font-bold text-slate-800">{emp.completed}</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-xs font-semibold text-red-700 mb-1">Failed</div>
-                        <div className="text-lg font-bold text-slate-800">{emp.failed}</div>
-                      </div>
-                    </div>
-
-                    {/* Visual progress bar */}
-                    <div className="h-3 bg-slate-100 rounded-full overflow-hidden flex">
-                      {emp.new > 0 && (
-                        <div
-                          className="bg-blue-500 transition-all duration-500"
-                          style={{ width: `${(emp.new / emp.total) * 100}%` }}
-                          title={`${emp.new} new tasks`}
-                        />
-                      )}
-                      {emp.inProgress > 0 && (
-                        <div
-                          className="bg-yellow-500 transition-all duration-500"
-                          style={{ width: `${(emp.inProgress / emp.total) * 100}%` }}
-                          title={`${emp.inProgress} in progress`}
-                        />
-                      )}
-                      {emp.completed > 0 && (
-                        <div
-                          className="bg-green-500 transition-all duration-500"
-                          style={{ width: `${(emp.completed / emp.total) * 100}%` }}
-                          title={`${emp.completed} completed`}
-                        />
-                      )}
-                      {emp.failed > 0 && (
-                        <div
-                          className="bg-red-500 transition-all duration-500"
-                          style={{ width: `${(emp.failed / emp.total) * 100}%` }}
-                          title={`${emp.failed} failed`}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
+                    return (
+                      <tr
+                        key={idx}
+                        className="border-b border-slate-50 hover:bg-slate-50 transition-colors"
+                      >
+                        <td className="py-4 px-2">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-sm">
+                              {emp.name.charAt(0)}
+                            </div>
+                            <div className="font-medium text-slate-800">{emp.name}</div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-2 text-center font-medium text-blue-600">
+                          {emp.new}
+                        </td>
+                        <td className="py-4 px-2 text-center font-medium text-yellow-600">
+                          {emp.inProgress}
+                        </td>
+                        <td className="py-4 px-2 text-center font-medium text-green-600">
+                          {emp.completed}
+                        </td>
+                        <td className="py-4 px-2 text-center font-medium text-red-600">
+                          {emp.failed}
+                        </td>
+                        <td className="py-4 px-2 text-center font-bold text-slate-800">
+                          {emp.total}
+                        </td>
+                        <td className="py-4 px-2 text-right">
+                          <span
+                            className={`inline-block px-2 py-1 rounded text-xs font-bold ${
+                              Number(completionRate) >= 80
+                                ? 'bg-green-100 text-green-700'
+                                : Number(completionRate) >= 50
+                                  ? 'bg-yellow-100 text-yellow-700'
+                                  : 'bg-red-100 text-red-700'
+                            }`}
+                          >
+                            {completionRate}%
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
             </div>
           )}
         </div>

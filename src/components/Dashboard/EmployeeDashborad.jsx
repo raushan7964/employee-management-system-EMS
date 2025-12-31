@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getTasks } from '../../utils/taskStorage'
+import { FaClipboardList, FaBolt, FaCheckCircle, FaHourglassHalf, FaClock, FaPlus, FaChartBar, FaCog, FaSmile } from 'react-icons/fa'
 
 const EmployeeDashboard = ({ employee }) => {
   const navigate = useNavigate()
@@ -63,7 +64,7 @@ const EmployeeDashboard = ({ employee }) => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-800 mb-2">
-              Welcome back, {employee?.firstName || 'Employee'}! 👋
+              Welcome back, {employee?.firstName || 'Employee'}! <FaSmile className="inline text-yellow-500" />
             </h1>
             <p className="text-slate-600">Here's an overview of your tasks and progress</p>
           </div>
@@ -71,7 +72,7 @@ const EmployeeDashboard = ({ employee }) => {
             onClick={() => navigate('/task')}
             className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
           >
-            <span>+</span>
+            <FaPlus />
             <span>Create Self-Task</span>
           </button>
         </div>
@@ -83,7 +84,7 @@ const EmployeeDashboard = ({ employee }) => {
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-semibold text-blue-700">Total Tasks</div>
             <div className="h-10 w-10 rounded-full bg-blue-500 text-white flex items-center justify-center text-lg">
-              📋
+              <FaClipboardList />
             </div>
           </div>
           <div className="text-3xl font-bold text-slate-800">{stats.total}</div>
@@ -94,7 +95,7 @@ const EmployeeDashboard = ({ employee }) => {
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-semibold text-yellow-700">In Progress</div>
             <div className="h-10 w-10 rounded-full bg-yellow-500 text-white flex items-center justify-center text-lg">
-              ⚡
+              <FaBolt />
             </div>
           </div>
           <div className="text-3xl font-bold text-slate-800">{stats.inProgress}</div>
@@ -105,7 +106,7 @@ const EmployeeDashboard = ({ employee }) => {
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-semibold text-green-700">Completed</div>
             <div className="h-10 w-10 rounded-full bg-green-500 text-white flex items-center justify-center text-lg">
-              ✓
+              <FaCheckCircle />
             </div>
           </div>
           <div className="text-3xl font-bold text-slate-800">{stats.completed}</div>
@@ -116,7 +117,7 @@ const EmployeeDashboard = ({ employee }) => {
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-semibold text-purple-700">Pending</div>
             <div className="h-10 w-10 rounded-full bg-purple-500 text-white flex items-center justify-center text-lg">
-              ⏳
+              <FaHourglassHalf />
             </div>
           </div>
           <div className="text-3xl font-bold text-slate-800">{stats.new}</div>
@@ -127,7 +128,7 @@ const EmployeeDashboard = ({ employee }) => {
           <div className="flex items-center justify-between mb-2">
             <div className="text-sm font-semibold text-orange-700">Awaiting Approval</div>
             <div className="h-10 w-10 rounded-full bg-orange-500 text-white flex items-center justify-center text-lg">
-              ⏰
+              <FaClock />
             </div>
           </div>
           <div className="text-3xl font-bold text-slate-800">{pendingApproval}</div>
@@ -151,7 +152,7 @@ const EmployeeDashboard = ({ employee }) => {
 
             {myTasks.length === 0 ? (
               <div className="text-center py-12 text-slate-500">
-                <div className="text-6xl mb-4">🎉</div>
+                <FaCheckCircle className="text-6xl mb-4 text-green-500 mx-auto" />
                 <div className="text-lg font-semibold text-slate-800 mb-2">All caught up!</div>
                 <div className="text-sm">No tasks assigned to you at the moment</div>
               </div>
@@ -177,7 +178,7 @@ const EmployeeDashboard = ({ employee }) => {
                         </span>
                         {task.approvalStatus === 'pending' && (
                           <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold">
-                            ⏰ Pending Approval
+                            <FaClock className="inline mr-1" /> Pending Approval
                           </span>
                         )}
                       </div>
@@ -255,25 +256,25 @@ const EmployeeDashboard = ({ employee }) => {
                 onClick={() => navigate('/task')}
                 className="w-full px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-sm font-semibold transition-colors text-left"
               >
-                ➕ Create Self-Task
+                <span className="mr-2"><FaPlus className="inline" /></span> Create Self-Task
               </button>
               <button
                 onClick={() => navigate('/tasks')}
                 className="w-full px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg text-sm font-semibold transition-colors text-left"
               >
-                📋 View All My Tasks
+                <span className="mr-2"><FaClipboardList className="inline" /></span> View All My Tasks
               </button>
               <button
                 onClick={() => navigate('/reports')}
                 className="w-full px-4 py-2 bg-green-50 hover:bg-green-100 text-green-700 rounded-lg text-sm font-semibold transition-colors text-left"
               >
-                📊 My Performance Report
+                <span className="mr-2"><FaChartBar className="inline" /></span> My Performance Report
               </button>
               <button
                 onClick={() => navigate('/settings')}
                 className="w-full px-4 py-2 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-lg text-sm font-semibold transition-colors text-left"
               >
-                ⚙️ Settings
+                <span className="mr-2"><FaCog className="inline" /></span> Settings
               </button>
             </div>
           </div>

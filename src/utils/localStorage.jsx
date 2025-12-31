@@ -264,8 +264,7 @@ const admin = [
 ]
 
 export const setLocalStorage = () => {
-  localStorage.setItem('employees', JSON.stringify(employees))
-  localStorage.setItem('admin', JSON.stringify(admin))
+  // Deprecated: Logic moved to specific storage utils (adminStorage/employeeStorage) to prevent overwriting data.
 }
 
 export const getLocalStorage = (key) => {
