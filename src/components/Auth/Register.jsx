@@ -7,7 +7,9 @@ const Register = ({ onRegisterSuccess, toggleView }) => {
     firstName: '',
     email: '',
     password: '',
-    role: 'employee', // default role
+    role: 'employee', // This is the system role selector (Admin vs Employee)
+    department: '',
+    jobTitle: '',
   })
   const [error, setError] = useState('')
 
@@ -15,16 +17,34 @@ const Register = ({ onRegisterSuccess, toggleView }) => {
     e.preventDefault()
     setError('')
 
+    // Basic Validation
     if (!formData.firstName || !formData.email || !formData.password) {
       setError('All fields are required')
       return
+    }
+
+    // Role-specific validation
+    if (formData.role === 'employee') {
+      if (!formData.department || !formData.jobTitle) {
+        setError('Department and Job Title are required for employees')
+        return
+      }
     }
 
     let result
     if (formData.role === 'admin') {
       result = addAdmin(formData)
     } else {
-      result = addEmployee(formData)
+      // For employees, map the 'Job Title' input to the 'role' property
+      // to match existing data structure (e.g. role: "Senior Developer")
+      const employeeData = {
+        firstName: formData.firstName,
+        email: formData.email,
+        password: formData.password,
+        department: formData.department,
+        role: formData.jobTitle, // Map jobTitle to role
+      }
+      result = addEmployee(employeeData)
     }
 
     if (result.success) {
@@ -79,6 +99,32 @@ const Register = ({ onRegisterSuccess, toggleView }) => {
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
           </div>
+
+          {formData.role === 'employee' && (
+            <>
+              <div className="field">
+                <label htmlFor="department">Department</label>
+                <input
+                  id="department"
+                  type="text"
+                  placeholder="e.g. Engineering"
+                  value={formData.department}
+                  onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="jobTitle">Job Title</label>
+                <input
+                  id="jobTitle"
+                  type="text"
+                  placeholder="e.g. Senior Developer"
+                  value={formData.jobTitle}
+                  onChange={(e) => setFormData({ ...formData, jobTitle: e.target.value })}
+                />
+              </div>
+            </>
+          )}
 
           <div className="field">
             <label htmlFor="password">Password</label>
