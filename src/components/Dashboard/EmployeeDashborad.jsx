@@ -6,6 +6,7 @@ import { FaClipboardList, FaBolt, FaCheckCircle, FaHourglassHalf, FaClock, FaPlu
 const EmployeeDashboard = ({ employee }) => {
   const navigate = useNavigate()
   const [myTasks, setMyTasks] = useState([])
+  const [filterStatus, setFilterStatus] = useState('all')
   const [stats, setStats] = useState({ total: 0, new: 0, inProgress: 0, completed: 0, failed: 0 })
 
   useEffect(() => {
@@ -142,12 +143,24 @@ const EmployeeDashboard = ({ employee }) => {
           <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-100">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-slate-800">My Tasks</h3>
-              <button
-                onClick={() => navigate('/tasks')}
-                className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold"
-              >
-                View All →
-              </button>
+              <div className="flex items-center gap-3">
+                <select 
+                  className="px-3 py-1.5 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                >
+                  <option value="all">All Status</option>
+                  <option value="new">New</option>
+                  <option value="in-progress">Active</option>
+                  <option value="completed">Completed</option>
+                  <option value="failed">Failed</option>
+                </select>
+                <button
+                  onClick={() => navigate('/tasks')}
+                  className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold"
+                >
+                  View All →
+                </button>
+              </div>
             </div>
 
             {myTasks.length === 0 ? (
@@ -158,7 +171,10 @@ const EmployeeDashboard = ({ employee }) => {
               </div>
             ) : (
               <div className="space-y-3 max-h-[500px] overflow-y-auto">
-                {myTasks.slice(0, 10).map((task) => (
+                {myTasks
+                  .filter(t => filterStatus === 'all' || t.status === filterStatus)
+                  .slice(0, 10)
+                  .map((task) => (
                   <div
                     key={task.id}
                     onClick={() => navigate(`/tasks/${task.id}`)}

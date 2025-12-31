@@ -18,7 +18,7 @@ const TaskListNumber = ({ employee }) => {
   return (
     <section className="w-full">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-md p-6 border-2 border-blue-100 hover:shadow-lg transition-all">
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl shadow-md p-6 border-2 border-blue-100 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
           <div className="flex items-center justify-between mb-2">
             <div className="h-12 w-12 rounded-full bg-blue-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
               {stats.new}
@@ -29,7 +29,7 @@ const TaskListNumber = ({ employee }) => {
           <div className="text-sm text-slate-600 font-medium">New Tasks</div>
         </div>
 
-        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl shadow-md p-6 border-2 border-yellow-100 hover:shadow-lg transition-all">
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl shadow-md p-6 border-2 border-yellow-100 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
           <div className="flex items-center justify-between mb-2">
             <div className="h-12 w-12 rounded-full bg-yellow-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
               {stats.inProgress}
@@ -40,7 +40,7 @@ const TaskListNumber = ({ employee }) => {
           <div className="text-sm text-slate-600 font-medium">In Progress</div>
         </div>
 
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-md p-6 border-2 border-green-100 hover:shadow-lg transition-all">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl shadow-md p-6 border-2 border-green-100 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
           <div className="flex items-center justify-between mb-2">
             <div className="h-12 w-12 rounded-full bg-green-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
               {stats.completed}
@@ -51,7 +51,7 @@ const TaskListNumber = ({ employee }) => {
           <div className="text-sm text-slate-600 font-medium">Completed</div>
         </div>
 
-        <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl shadow-md p-6 border-2 border-red-100 hover:shadow-lg transition-all">
+        <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl shadow-md p-6 border-2 border-red-100 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer">
           <div className="flex items-center justify-between mb-2">
             <div className="h-12 w-12 rounded-full bg-red-500 text-white flex items-center justify-center font-bold text-lg shadow-md">
               {stats.failed}
@@ -60,22 +60,6 @@ const TaskListNumber = ({ employee }) => {
           </div>
           <div className="text-3xl font-bold text-slate-800 mb-1">{stats.failed}</div>
           <div className="text-sm text-slate-600 font-medium">Failed</div>
-        </div>
-      </div>
-
-      <div className="mt-4 bg-white rounded-xl shadow-md p-4 border border-slate-100">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-semibold text-slate-600">Total Tasks</span>
-          <span className="text-2xl font-bold text-indigo-600">{stats.total}</span>
-        </div>
-        <div className="mt-2 h-2 bg-slate-100 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
-            style={{ width: `${stats.total > 0 ? (stats.completed / stats.total) * 100 : 0}%` }}
-          />
-        </div>
-        <div className="mt-1 text-xs text-slate-500 text-right">
-          {stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0}% Complete
         </div>
       </div>
     </section>
