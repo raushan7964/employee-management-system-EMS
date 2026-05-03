@@ -39,7 +39,7 @@ const Reports = ({ userRole, currentEmployee }) => {
     // Calculate stats from filtered tasks
     const taskStats = {
       totals: tasks.length,
-      new: tasks.filter((t) => t.status === 'new').length,
+      news: tasks.filter((t) => t.status === 'new').length,
       inProgress: tasks.filter((t) => t.status === 'in-progress').length,
       completed: tasks.filter((t) => t.status === 'completed').length,
       failed: tasks.filter((t) => t.status === 'failed').length,
