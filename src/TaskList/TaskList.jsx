@@ -10,12 +10,12 @@ const TaskList = ({ employee }) => {
     loadRecentTasks()
   }, [])
 
-  const loadRecentTasks = () => {
-    const allTasks = getTasks()
+  const loadRecentTasks = async () => {
+    const allTasks = await getTasks()
     // Get last 6 tasks, sorted by creation date
     const recent = allTasks
-      .filter(task => task.approvalStatus !== 'pending') // Exclude pending approval tasks
-      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .filter(task => task.approval_status !== 'pending') // Exclude pending approval tasks
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 6)
     setRecentTasks(recent)
   }
@@ -83,8 +83,8 @@ const TaskList = ({ employee }) => {
                   </span>
                 </div>
                 <div className="text-xs text-slate-500">
-                  <div>{task.assigneeName}</div>
-                  <div>Due: {new Date(task.dueDate).toLocaleDateString()}</div>
+                  <div>{task.assignee_name || task.assigneeName}</div>
+                  <div>Due: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}</div>
                 </div>
               </div>
             </div>

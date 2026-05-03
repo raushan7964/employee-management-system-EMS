@@ -18,8 +18,8 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, onSuccess }) => {
   useEffect(() => {
     if (employee) {
       setFormData({
-        firstName: employee.firstName || '',
-        lastName: employee.lastName || '',
+        firstName: employee.first_name || employee.firstName || '',
+        lastName: employee.last_name || employee.lastName || '',
         email: employee.email || '',
         password: employee.password || '',
         department: employee.department || '',
@@ -37,13 +37,13 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, onSuccess }) => {
     }
   }, [employee, isOpen])
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
 
     const result = employee
-      ? updateEmployee(employee.id, formData)
-      : addEmployee(formData)
+      ? await updateEmployee(employee.id, formData)
+      : await addEmployee(formData)
 
     if (result.success) {
       setToast({

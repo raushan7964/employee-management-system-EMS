@@ -15,17 +15,17 @@ const Employees = () => {
   const [employeeToDelete, setEmployeeToDelete] = useState(null)
   const [toast, setToast] = useState(null)
 
+  const loadEmployees = async () => {
+    const allEmployees = await getEmployees()
+    setEmployees(allEmployees)
+  }
+
   useEffect(() => {
     loadEmployees()
   }, [])
 
-  const loadEmployees = () => {
-    const allEmployees = getEmployees()
-    setEmployees(allEmployees)
-  }
-
   const filteredEmployees = employees.filter((emp) => {
-    const name = `${emp.firstName} ${emp.lastName}`.toLowerCase()
+    const name = `${emp.first_name} ${emp.last_name || ''}`.toLowerCase()
     const email = emp.email.toLowerCase()
     return (
       name.includes(searchTerm.toLowerCase()) ||
@@ -48,11 +48,11 @@ const Employees = () => {
     setShowDeleteDialog(true)
   }
 
-  const handleDeleteConfirm = () => {
-    const result = deleteEmployee(employeeToDelete.id)
+  const handleDeleteConfirm = async () => {
+    const result = await deleteEmployee(employeeToDelete.id)
     if (result.success) {
       setToast({ message: 'Employee removed successfully!', type: 'success' })
-      loadEmployees()
+      await loadEmployees()
     } else {
       setToast({ message: `Error: ${result.error}`, type: 'error' })
     }
@@ -78,7 +78,7 @@ const Employees = () => {
       <ConfirmDialog
         isOpen={showDeleteDialog}
         title="Remove Employee"
-        message={`Are you sure you want to remove ${employeeToDelete?.firstName} ${employeeToDelete?.lastName}? This action cannot be undone.`}
+        message={`Are you sure you want to remove ${employeeToDelete?.first_name} ${employeeToDelete?.last_name || ''}? This action cannot be undone.`}
         onConfirm={handleDeleteConfirm}
         onCancel={() => setShowDeleteDialog(false)}
         confirmText="Remove"
@@ -123,7 +123,7 @@ const Employees = () => {
           </div>
         ) : (
           filteredEmployees.map((e, idx) => {
-            const initial = e.firstName.charAt(0).toUpperCase()
+             const initial = e.first_name.charAt(0).toUpperCase()
             const gradients = [
               'from-pink-400 to-rose-500',
               'from-blue-400 to-cyan-500',
@@ -146,7 +146,7 @@ const Employees = () => {
                     {initial}
                   </div>
                   <div className="font-bold text-lg text-slate-800 mb-1">
-                    {e.firstName} {e.lastName}
+                    {e.first_name} {e.last_name || ''}
                   </div>
                   <div className="text-sm text-slate-500 mb-3">{e.email}</div>
                   <div className="inline-flex px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-semibold mb-2">

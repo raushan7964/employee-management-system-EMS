@@ -12,7 +12,7 @@ const MainLayout = ({ userRole, currentEmployee }) => {
     window.location.href = '/'
   }
 
-  const userName = currentEmployee?.firstName || (userRole === 'admin' ? 'Admin' : 'User')
+  const userName = currentEmployee?.first_name || currentEmployee?.firstName || (userRole === 'admin' ? 'Admin' : 'User')
   const userInitial = userName.charAt(0).toUpperCase()
 
   const navItems = [

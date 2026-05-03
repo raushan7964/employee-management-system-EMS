@@ -8,20 +8,20 @@ const AllTasks = ({ userRole, currentEmployee }) => {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
 
-  useEffect(() => {
-    loadTasks()
-  }, [currentEmployee, userRole])
-
-  const loadTasks = () => {
-    let allTasks = getTasks()
+  const loadTasks = async () => {
+    let allTasks = await getTasks()
     
     // If employee, show only their tasks
     if (userRole === 'employee' && currentEmployee?.email) {
-      allTasks = allTasks.filter(task => task.assignee === currentEmployee.email)
+      allTasks = allTasks.filter(task => (task.assignee_email || task.assignee) === currentEmployee.email)
     }
     
     setTasks(allTasks)
   }
+
+  useEffect(() => {
+    loadTasks()
+  }, [currentEmployee, userRole])
 
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -35,6 +35,7 @@ const AllTasks = ({ userRole, currentEmployee }) => {
       'new': 'bg-blue-50 text-blue-700 border-blue-200',
       'in-progress': 'bg-yellow-50 text-yellow-700 border-yellow-200',
       'completed': 'bg-green-50 text-green-700 border-green-200',
+      'pending-approval': 'bg-amber-50 text-amber-700 border-amber-200',
       'failed': 'bg-red-50 text-red-700 border-red-200',
     }
     return colors[status] || 'bg-slate-50 text-slate-700'
@@ -75,28 +76,32 @@ const AllTasks = ({ userRole, currentEmployee }) => {
           )}
         </div>
 
-        <div className="flex gap-4 items-center">
-          <div className="flex-1 relative">
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="w-full md:flex-1 relative">
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search tasks..."
-              className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+              placeholder="Search tasks by title or description..."
+              className="w-full px-4 py-3 pl-12 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all shadow-sm"
             />
             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">🔍</span>
           </div>
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none bg-white font-medium text-slate-700"
-          >
-            <option value="all">All Status</option>
-            <option value="new">New</option>
-            <option value="in-progress">In Progress</option>
-            <option value="completed">Completed</option>
-            <option value="failed">Failed</option>
-          </select>
+          <div className="w-full md:w-auto flex items-center gap-2">
+            <span className="text-sm font-semibold text-slate-500 whitespace-nowrap">Status:</span>
+            <select 
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full md:w-48 px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none bg-white font-medium text-slate-700 shadow-sm transition-all"
+            >
+              <option value="all">All Status</option>
+              <option value="new">🆕 New</option>
+              <option value="in-progress">⚡ In Progress</option>
+              <option value="completed">✅ Completed</option>
+              <option value="pending-approval">⏳ Pending Approval</option>
+              <option value="failed">❌ Failed</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -138,12 +143,12 @@ const AllTasks = ({ userRole, currentEmployee }) => {
               <div className="space-y-2 mb-4">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-slate-500">Assignee:</span>
-                  <span className="font-medium text-slate-700">{task.assigneeName}</span>
+                  <span className="font-medium text-slate-700">{task.assignee_name || task.assigneeName}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-slate-500">Due:</span>
                   <span className="font-medium text-slate-700">
-                    {new Date(task.dueDate).toLocaleDateString()}
+                    {task.due_date ? new Date(task.due_date).toLocaleDateString() : (task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'No date')}
                   </span>
                 </div>
               </div>

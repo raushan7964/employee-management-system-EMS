@@ -13,7 +13,7 @@ const Register = ({ onRegisterSuccess, toggleView }) => {
   })
   const [error, setError] = useState('')
 
-  const submitHandler = (e) => {
+  const submitHandler = async (e) => {
     e.preventDefault()
     setError('')
 
@@ -33,18 +33,16 @@ const Register = ({ onRegisterSuccess, toggleView }) => {
 
     let result
     if (formData.role === 'admin') {
-      result = addAdmin(formData)
+      result = await addAdmin(formData)
     } else {
-      // For employees, map the 'Job Title' input to the 'role' property
-      // to match existing data structure (e.g. role: "Senior Developer")
       const employeeData = {
         firstName: formData.firstName,
         email: formData.email,
         password: formData.password,
         department: formData.department,
-        role: formData.jobTitle, // Map jobTitle to role
+        role: formData.jobTitle,
       }
-      result = addEmployee(employeeData)
+      result = await addEmployee(employeeData)
     }
 
     if (result.success) {

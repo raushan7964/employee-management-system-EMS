@@ -9,15 +9,11 @@ const EmployeeDashboard = ({ employee }) => {
   const [filterStatus, setFilterStatus] = useState('all')
   const [stats, setStats] = useState({ total: 0, new: 0, inProgress: 0, completed: 0, failed: 0 })
 
-  useEffect(() => {
-    if (employee?.email) {
-      loadMyTasks()
-    }
-  }, [employee])
+  // Move useEffect below function definition
 
-  const loadMyTasks = () => {
-    const allTasks = getTasks()
-    const employeeTasks = allTasks.filter(task => task.assignee === employee.email)
+  const loadMyTasks = async () => {
+    const allTasks = await getTasks()
+    const employeeTasks = allTasks.filter(task => (task.assignee_email || task.assignee) === employee.email)
     setMyTasks(employeeTasks)
 
     // Calculate stats
@@ -30,7 +26,13 @@ const EmployeeDashboard = ({ employee }) => {
     })
   }
 
-  const name = `${employee?.firstName || ''} ${employee?.lastName || ''}`.trim() || 'Employee'
+  useEffect(() => {
+    if (employee?.email) {
+      loadMyTasks()
+    }
+  }, [employee])
+
+  const name = `${employee?.first_name || ''} ${employee?.last_name || ''}`.trim() || 'Employee'
   const email = employee?.email || ''
   const role = employee?.role || 'Employee'
   const department = employee?.department || 'General'
@@ -56,7 +58,7 @@ const EmployeeDashboard = ({ employee }) => {
   }
 
   const completionRate = stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(0) : 0
-  const pendingApproval = myTasks.filter(t => t.approvalStatus === 'pending').length
+  const pendingApproval = myTasks.filter(t => t.approval_status === 'pending').length
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -65,7 +67,7 @@ const EmployeeDashboard = ({ employee }) => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-slate-800 mb-2">
-              Welcome back, {employee?.firstName || 'Employee'}! <FaSmile className="inline text-yellow-500" />
+              Welcome back, {employee?.first_name || 'Employee'}! <FaSmile className="inline text-yellow-500" />
             </h1>
             <p className="text-slate-600">Here's an overview of your tasks and progress</p>
           </div>
@@ -192,14 +194,14 @@ const EmployeeDashboard = ({ employee }) => {
                         <span className={`px-3 py-1 rounded-lg text-xs font-semibold border-2 ${getStatusColor(task.status)}`}>
                           {task.status.replace('-', ' ').toUpperCase()}
                         </span>
-                        {task.approvalStatus === 'pending' && (
+                        {task.approval_status === 'pending' && (
                           <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded-md text-xs font-semibold">
                             <FaClock className="inline mr-1" /> Pending Approval
                           </span>
                         )}
                       </div>
                       <span className="text-xs text-slate-500">
-                        Due: {new Date(task.dueDate).toLocaleDateString()}
+                        Due: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}
                       </span>
                     </div>
                   </div>
@@ -215,7 +217,7 @@ const EmployeeDashboard = ({ employee }) => {
           <div className="bg-white rounded-xl shadow-lg p-6 border border-slate-100">
             <div className="text-center">
               <div className="mx-auto h-24 w-24 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-white flex items-center justify-center text-3xl font-bold shadow-lg mb-4">
-                {employee?.firstName?.charAt(0) || 'E'}
+                {employee?.first_name?.charAt(0) || 'E'}
               </div>
               <h3 className="text-lg font-bold text-slate-800">{name}</h3>
               <p className="text-sm text-indigo-600 font-medium">{role}</p>

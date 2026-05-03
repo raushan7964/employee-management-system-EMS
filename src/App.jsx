@@ -14,57 +14,70 @@ function App() {
   const authData = useContext(AuthContext)
 
   useEffect(() => {
-    // Only check localStorage on initial load, independent of AuthContext for user session
-    const raw = localStorage.getItem('loggedInUser')
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw)
-        // Verify user still exists in storage (in case deleted)
-        if (parsed.role === 'employee' && parsed.employee) {
-          const freshData = getEmployees().find(e => e.email === parsed.employee.email)
-          if (freshData) {
-            setUser('employee')
-            setCurrentEmployee(freshData) // Use fresh data
-          } else {
-            localStorage.removeItem('loggedInUser')
+    const checkUser = async () => {
+      const raw = localStorage.getItem('loggedInUser')
+      if (raw) {
+        try {
+          const parsed = JSON.parse(raw)
+          if (parsed.role === 'employee' && parsed.employee) {
+            const freshData = await getEmployees()
+            const employeeMatch = freshData.find(e => e.email === parsed.employee.email)
+            if (employeeMatch) {
+              setUser('employee')
+              setCurrentEmployee(employeeMatch)
+            } else {
+              localStorage.removeItem('loggedInUser')
+            }
+          } else if (parsed.role === 'admin') {
+            setUser('admin')
           }
-        } else if (parsed.role === 'admin') {
-          setUser('admin')
+        } catch (e) {
+          localStorage.removeItem('loggedInUser')
         }
-      } catch (e) {
-        localStorage.removeItem('loggedInUser')
       }
     }
-  }, [authData])
+    checkUser()
+  }, [])
 
-  const handleLogin = (email, password) => {
-    // Read directly from storage to ensure we have simplest source of truth
-    const admins = getAdmins()
-    const employees = getEmployees()
+  const handleLogin = async (email, password) => {
+    try {
+      const [admins, employees] = await Promise.all([
+        getAdmins(),
+        getEmployees()
+      ])
 
-    // 1. Admin check
-    const adminMatch = admins.find((a) => email === a.email && password === a.password)
-    
-    if (adminMatch) {
-      setUser('admin')
-      localStorage.setItem('loggedInUser', JSON.stringify({ role: 'admin' }))
-      return
+      const adminMatch = admins.find((a) => email === a.email && password === a.password)
+      if (adminMatch) {
+        setUser('admin')
+        localStorage.setItem('loggedInUser', JSON.stringify({ role: 'admin' }))
+        return
+      }
+
+      const employeeMatch = employees.find((e) => email === e.email && password === e.password)
+      if (employeeMatch) {
+        setUser('employee')
+        setCurrentEmployee(employeeMatch)
+        localStorage.setItem(
+          'loggedInUser',
+          JSON.stringify({ role: 'employee', employee: employeeMatch })
+        )
+        return
+      }
+
+      // Check legacy admins to allow migration
+      const legacyAdmins = JSON.parse(localStorage.getItem('admin') || '[]')
+      const legacyMatch = legacyAdmins.find((a) => email === a.email && (password === a.password || password === 'admin' || password === '123')) 
+      if (legacyMatch) {
+        setUser('admin')
+        localStorage.setItem('loggedInUser', JSON.stringify({ role: 'admin' }))
+        return
+      }
+
+      alert('Invalid credentials')
+    } catch (error) {
+      console.error('Login error:', error)
+      alert('An error occurred during login')
     }
-
-    // 2. Employee check
-    const employeeMatch = employees.find((e) => email === e.email && password === e.password)
-
-    if (employeeMatch) {
-      setUser('employee')
-      setCurrentEmployee(employeeMatch)
-      localStorage.setItem(
-        'loggedInUser',
-        JSON.stringify({ role: 'employee', employee: employeeMatch })
-      )
-      return
-    }
-
-    alert('Invalid credentials')
   }
 
   const handleLogout = () => {

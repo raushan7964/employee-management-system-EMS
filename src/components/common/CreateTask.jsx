@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { addTask } from '../../utils/taskStorage'
 
 // Controlled modal: parent controls visibility via `isOpen` and `onClose`
 const CreateTask = ({ isOpen = false, onClose = () => {} }) => {
@@ -8,19 +9,39 @@ const CreateTask = ({ isOpen = false, onClose = () => {} }) => {
   const [dueDate, setDueDate] = useState('')
   const [description, setDescription] = useState('')
 
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
   if (!isOpen) return null
 
-  const handleCreate = (e) => {
+  const handleCreate = async (e) => {
     e.preventDefault()
-    // For now just log. Replace with real create logic later or call a prop.
-    console.log('Create task', { title, priority, assignee, dueDate, description })
-    // optionally reset fields
-    setTitle('')
-    setPriority('Medium')
-    setAssignee('')
-    setDueDate('')
-    setDescription('')
-    onClose()
+    setIsSubmitting(true)
+
+    const taskData = {
+      title,
+      priority: priority.toLowerCase(),
+      assignee: assignee,
+      dueDate,
+      description,
+      status: 'new',
+      approvalStatus: 'approved'
+    }
+
+    const result = await addTask(taskData)
+    
+    if (result.success) {
+      setTitle('')
+      setPriority('Medium')
+      setAssignee('')
+      setDueDate('')
+      setDescription('')
+      onClose()
+      // Note: In a real app, you'd want to refresh the dashboard data here.
+      window.location.reload() // Force refresh to see new task
+    } else {
+      alert(`Error creating task: ${result.error}`)
+    }
+    setIsSubmitting(false)
   }
 
   return (

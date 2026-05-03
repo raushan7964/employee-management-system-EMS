@@ -11,8 +11,11 @@ const TaskListNumber = ({ employee }) => {
   })
 
   useEffect(() => {
-    const taskStats = getTaskStats()
-    setStats(taskStats)
+    const fetchStats = async () => {
+      const taskStats = await getTaskStats()
+      setStats(taskStats)
+    }
+    fetchStats()
   }, [])
 
   return (

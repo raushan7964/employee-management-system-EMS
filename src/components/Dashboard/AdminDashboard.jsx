@@ -5,82 +5,72 @@ import React, { useState, useEffect } from 'react'
 import { getTasks, updateTask } from '../../utils/taskStorage'
 import { getEmployees } from '../../utils/employeeStorage'
 import Toast from '../common/Toast'
-import { FaClock, FaCheckCircle, FaCheck, FaTimes, FaChartBar } from 'react-icons/fa'
+import { FaClock, FaCheckCircle, FaCheck, FaTimes, FaChartBar, FaCloudUploadAlt } from 'react-icons/fa'
+import { hasLegacyData, migrateLegacyData } from '../../utils/migration'
 
 const AdminDashboard = () => {
   const [showModal, setShowModal] = useState(false)
   const [employeeStats, setEmployeeStats] = useState([])
   const [pendingTasks, setPendingTasks] = useState([])
   const [toast, setToast] = useState(null)
+  const [showMigrationBanner, setShowMigrationBanner] = useState(hasLegacyData())
+  const [isMigrating, setIsMigrating] = useState(false)
 
-  useEffect(() => {
-    loadEmployeeStats()
-    loadPendingApprovals()
-  }, [])
+  // Move useEffect below function definitions
 
-  const loadPendingApprovals = () => {
-    const tasks = getTasks()
-    console.log('=== ADMIN DASHBOARD - LOADING PENDING APPROVALS ===')
-    console.log('Total tasks found:', tasks.length)
-
-    // Log each task's status
-    tasks.forEach((task, index) => {
-      console.log(`Task ${index + 1}:`, {
-        title: task.title,
-        status: task.status,
-        approvalStatus: task.approvalStatus,
-        assignee: task.assigneeName,
-      })
-    })
-
+  const loadPendingApprovals = async () => {
+    const tasks = await getTasks()
+    
     // Check both approvalStatus field and status field for pending tasks
     const pending = tasks.filter(
-      (task) => task.approvalStatus === 'pending' || task.status === 'pending-approval'
+      (task) => task.approval_status === 'pending' || task.status === 'pending-approval'
     )
 
     setPendingTasks(pending)
   }
 
-  const handleApprove = (taskId) => {
-    const result = updateTask(taskId, {
-      approvalStatus: 'approved',
-      status: 'new', // Change from pending-approval to new
+  const handleApprove = async (taskId) => {
+    const result = await updateTask(taskId, {
+      approval_status: 'approved',
+      status: 'new',
     })
 
     if (result.success) {
       setToast({ message: 'Task approved successfully!', type: 'success' })
-      loadPendingApprovals()
-      loadEmployeeStats()
+      await loadPendingApprovals()
+      await loadEmployeeStats()
     } else {
       setToast({ message: `Error: ${result.error}`, type: 'error' })
     }
   }
 
-  const handleReject = (taskId) => {
-    const result = updateTask(taskId, {
-      approvalStatus: 'rejected',
+  const handleReject = async (taskId) => {
+    const result = await updateTask(taskId, {
+      approval_status: 'rejected',
       status: 'failed',
     })
 
     if (result.success) {
       setToast({ message: 'Task rejected', type: 'info' })
-      loadPendingApprovals()
-      loadEmployeeStats()
+      await loadPendingApprovals()
+      await loadEmployeeStats()
     } else {
       setToast({ message: `Error: ${result.error}`, type: 'error' })
     }
   }
 
-  const loadEmployeeStats = () => {
-    const tasks = getTasks()
-    const employees = getEmployees()
+  const loadEmployeeStats = async () => {
+    const [tasks, employees] = await Promise.all([
+      getTasks(),
+      getEmployees()
+    ])
 
     // Calculate task distribution per employee
     const statsMap = {}
 
     employees.forEach((emp) => {
       statsMap[emp.email] = {
-        name: `${emp.firstName} ${emp.lastName}`,
+        name: `${emp.first_name} ${emp.last_name || ''}`,
         email: emp.email,
         total: 0,
         new: 0,
@@ -91,12 +81,13 @@ const AdminDashboard = () => {
     })
 
     tasks.forEach((task) => {
-      if (statsMap[task.assignee]) {
-        statsMap[task.assignee].total++
-        if (task.status === 'new') statsMap[task.assignee].new++
-        else if (task.status === 'in-progress') statsMap[task.assignee].inProgress++
-        else if (task.status === 'completed') statsMap[task.assignee].completed++
-        else if (task.status === 'failed') statsMap[task.assignee].failed++
+      const assigneeEmail = task.assignee_email || task.assignee
+      if (statsMap[assigneeEmail]) {
+        statsMap[assigneeEmail].total++
+        if (task.status === 'new') statsMap[assigneeEmail].new++
+        else if (task.status === 'in-progress') statsMap[assigneeEmail].inProgress++
+        else if (task.status === 'completed') statsMap[assigneeEmail].completed++
+        else if (task.status === 'failed') statsMap[assigneeEmail].failed++
       }
     })
 
@@ -104,9 +95,68 @@ const AdminDashboard = () => {
     setEmployeeStats(stats)
   }
 
+  const handleMigrate = async () => {
+    setIsMigrating(true)
+    const results = await migrateLegacyData()
+    setIsMigrating(false)
+    setShowMigrationBanner(false)
+    
+    if (results.fatalError) {
+      setToast({ message: `Migration failed: ${results.fatalError}`, type: 'error' })
+    } else {
+      setToast({ 
+        message: `Successfully migrated ${results.employees} employees, ${results.admins} admins, and ${results.tasks} tasks!`, 
+        type: 'success' 
+      })
+      // Clear legacy storage to prevent re-migration
+      localStorage.removeItem('employees')
+      localStorage.removeItem('admin')
+      localStorage.removeItem('employeeMS_tasks')
+      localStorage.removeItem('employeeMS_employees')
+      
+      // Reload page to see new data
+      setTimeout(() => window.location.reload(), 2000)
+    }
+  }
+
+  useEffect(() => {
+    loadEmployeeStats()
+    loadPendingApprovals()
+  }, [])
+
   return (
     <div className="max-w-7xl mx-auto">
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+      {/* Migration Banner */}
+      {showMigrationBanner && (
+        <div className="mb-6 p-4 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-600 text-white rounded-lg shadow-md">
+              <FaCloudUploadAlt className="text-xl" />
+            </div>
+            <div>
+              <h4 className="font-bold text-slate-800">Legacy Data Detected</h4>
+              <p className="text-sm text-slate-600">Would you like to migrate your local data to Supabase?</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handleMigrate}
+              disabled={isMigrating}
+              className={`px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-semibold hover:bg-indigo-700 transition-all ${isMigrating ? 'opacity-50' : ''}`}
+            >
+              {isMigrating ? 'Migrating...' : 'Migrate Now'}
+            </button>
+            <button
+              onClick={() => setShowMigrationBanner(false)}
+              className="px-4 py-2 text-slate-500 hover:text-slate-700 text-sm font-medium"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="mb-8">
@@ -164,7 +214,7 @@ const AdminDashboard = () => {
                     <div className="flex items-center gap-2 text-sm mt-1">
                       <span className="text-slate-500">Due:</span>
                       <span className="font-semibold text-slate-800">
-                        {new Date(task.dueDate).toLocaleDateString()}
+                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No date'}
                       </span>
                     </div>
                     <div className="flex items-center gap-2 text-sm mt-1">

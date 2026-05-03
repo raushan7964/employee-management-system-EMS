@@ -7,7 +7,6 @@ import Toast from '../components/common/Toast'
 
 const Task = ({ userRole, currentEmployee }) => {
   const navigate = useNavigate()
-  const authData = useContext(AuthContext)
   const [employees, setEmployees] = useState([])
 
   const [formData, setFormData] = useState({
@@ -23,17 +22,17 @@ const Task = ({ userRole, currentEmployee }) => {
   const [toast, setToast] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const loadEmployees = async () => {
+    const allEmployees = await getEmployees()
+    setEmployees(allEmployees)
+  }
+
   // Load employees on mount and refresh
   useEffect(() => {
     loadEmployees()
   }, [])
 
-  const loadEmployees = () => {
-    const allEmployees = getEmployees()
-    setEmployees(allEmployees)
-  }
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
 
@@ -45,7 +44,7 @@ const Task = ({ userRole, currentEmployee }) => {
       taskData = {
         ...formData,
         assignee: currentEmployee.email,
-        assigneeName: `${currentEmployee.firstName} ${currentEmployee.lastName}`,
+        assigneeName: `${currentEmployee.first_name} ${currentEmployee.last_name || ''}`,
         createdBy: currentEmployee.email,
         status: 'pending-approval', // Requires admin approval
         approvalStatus: 'pending',
@@ -55,14 +54,14 @@ const Task = ({ userRole, currentEmployee }) => {
       const selectedEmployee = employees.find(emp => emp.email === formData.assignee)
       taskData = {
         ...formData,
-        assigneeName: selectedEmployee ? `${selectedEmployee.firstName} ${selectedEmployee.lastName}` : '',
+        assigneeName: selectedEmployee ? `${selectedEmployee.first_name} ${selectedEmployee.last_name || ''}` : '',
         createdBy: 'admin@example.com',
         approvalStatus: 'approved', // Admin tasks are auto-approved
       }
     }
 
-    // Add task to localStorage
-    const result = addTask(taskData)
+    // Add task to Supabase
+    const result = await addTask(taskData)
 
     if (result.success) {
       const message = userRole === 'employee' 
@@ -165,7 +164,7 @@ const Task = ({ userRole, currentEmployee }) => {
                   <option value="">Select Employee</option>
                   {employees.map((emp) => (
                     <option key={emp.id} value={emp.email}>
-                      {emp.firstName} {emp.lastName} - {emp.role}
+                      {emp.first_name} {emp.last_name || ''} - {emp.role}
                     </option>
                   ))}
                 </select>

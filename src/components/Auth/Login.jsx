@@ -1,9 +1,9 @@
 import React from 'react'
 import { useState } from 'react'
 const Login = ({ handleLogin, toggleView }) => {
-  const submitHandler = (e) => {
+  const submitHandler = async (e) => {
     e.preventDefault()
-    handleLogin(email, password)
+    await handleLogin(email, password)
 
     setEmail('')
     setPassword('')

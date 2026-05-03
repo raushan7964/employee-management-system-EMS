@@ -13,12 +13,8 @@ const TaskDetails = () => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [editData, setEditData] = useState({})
 
-  useEffect(() => {
-    loadTask()
-  }, [id])
-
-  const loadTask = () => {
-    const taskData = getTaskById(id)
+  const loadTask = React.useCallback(async () => {
+    const taskData = await getTaskById(id)
     if (taskData) {
       setTask(taskData)
       setEditData(taskData)
@@ -26,22 +22,26 @@ const TaskDetails = () => {
       setToast({ message: 'Task not found', type: 'error' })
       setTimeout(() => navigate('/tasks'), 2000)
     }
-  }
+  }, [id, navigate])
 
-  const handleStatusChange = (newStatus) => {
-    const result = updateTaskStatus(id, newStatus)
+  useEffect(() => {
+    loadTask()
+  }, [loadTask])
+
+  const handleStatusChange = async (newStatus) => {
+    const result = await updateTaskStatus(id, newStatus)
     if (result.success) {
-      setTask(result.task)
+      setTask(result.data)
       setToast({ message: 'Status updated successfully!', type: 'success' })
     } else {
       setToast({ message: `Error: ${result.error}`, type: 'error' })
     }
   }
 
-  const handleSaveEdit = () => {
-    const result = updateTask(id, editData)
+  const handleSaveEdit = async () => {
+    const result = await updateTask(id, editData)
     if (result.success) {
-      setTask(result.task)
+      setTask(result.data)
       setIsEditing(false)
       setToast({ message: 'Task updated successfully!', type: 'success' })
     } else {
@@ -49,8 +49,8 @@ const TaskDetails = () => {
     }
   }
 
-  const handleDelete = () => {
-    const result = deleteTask(id)
+  const handleDelete = async () => {
+    const result = await deleteTask(id)
     if (result.success) {
       setToast({ message: 'Task deleted successfully!', type: 'success' })
       setTimeout(() => navigate('/tasks'), 1500)
@@ -212,9 +212,9 @@ const TaskDetails = () => {
                 <p className="text-sm font-semibold text-slate-500 mb-2">Assignee</p>
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-gradient-to-br from-emerald-400 to-cyan-500 text-white flex items-center justify-center font-bold">
-                    {task.assigneeName.charAt(0)}
+                    {(task.assignee_name || task.assigneeName || 'U').charAt(0)}
                   </div>
-                  <p className="text-slate-800 font-medium">{task.assigneeName}</p>
+                  <p className="text-slate-800 font-medium">{task.assignee_name || task.assigneeName}</p>
                 </div>
               </div>
 
@@ -225,9 +225,9 @@ const TaskDetails = () => {
                     <select
                       value={task.status}
                       onChange={(e) => handleStatusChange(e.target.value)}
-                      disabled={task.approvalStatus === 'pending'}
+                      disabled={task.approval_status === 'pending' || task.approvalStatus === 'pending'}
                       className={`px-4 py-2 rounded-lg text-sm font-semibold border-2 outline-none ${
-                        task.approvalStatus === 'pending' ? 'opacity-50 cursor-not-allowed bg-slate-100 border-slate-200' : 'cursor-pointer'
+                        (task.approval_status === 'pending' || task.approvalStatus === 'pending') ? 'opacity-50 cursor-not-allowed bg-slate-100 border-slate-200' : 'cursor-pointer'
                       } ${getStatusColor(task.status)}`}
                     >
                       <option value="new">NEW</option>
@@ -235,7 +235,7 @@ const TaskDetails = () => {
                       <option value="completed">COMPLETED</option>
                       <option value="failed">FAILED</option>
                     </select>
-                    {task.approvalStatus === 'pending' && (
+                    {(task.approval_status === 'pending' || task.approvalStatus === 'pending') && (
                       <span className="text-xs font-semibold text-orange-600 bg-orange-100 px-2 py-1 rounded">
                         Locked (Pending Approval)
                       </span>
@@ -255,7 +255,7 @@ const TaskDetails = () => {
 
               <div>
                 <p className="text-sm font-semibold text-slate-500 mb-2">Due Date</p>
-                <p className="text-slate-800 font-medium">{new Date(task.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                 <p className="text-slate-800 font-medium">{task.due_date ? new Date(task.due_date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : (task.dueDate ? new Date(task.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'No date')}</p>
               </div>
             </div>
 
@@ -267,7 +267,7 @@ const TaskDetails = () => {
 
               <div>
                 <p className="text-sm font-semibold text-slate-500 mb-2">Created</p>
-                <p className="text-slate-800 font-medium">{new Date(task.createdAt).toLocaleDateString()}</p>
+                 <p className="text-slate-800 font-medium">{new Date(task.created_at || task.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
           </div>

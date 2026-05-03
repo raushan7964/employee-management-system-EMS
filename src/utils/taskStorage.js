@@ -1,53 +1,36 @@
-// Task Storage Utilities - Centralized task management with localStorage
+import { supabase, isConfigured } from './supabase'
 
-const TASKS_KEY = 'employeeMS_tasks'
+const LS_KEY = 'employeeMS_tasks'
 
-// Generate unique ID for tasks
-const generateTaskId = () => {
-  return `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-}
-
-// Migrate old tasks to add missing approvalStatus field
-const migrateTasks = (tasks) => {
-  let needsMigration = false
-  
-  const migratedTasks = tasks.map(task => {
-    // If task has pending-approval status but no approvalStatus field, add it
-    if (task.status === 'pending-approval' && !task.approvalStatus) {
-      needsMigration = true
-      return {
-        ...task,
-        approvalStatus: 'pending'
-      }
-    }
-    // If task doesn't have approvalStatus, set it based on status
-    if (!task.approvalStatus) {
-      needsMigration = true
-      return {
-        ...task,
-        approvalStatus: task.status === 'pending-approval' ? 'pending' : 'approved'
-      }
-    }
-    return task
-  })
-  
-  // Save migrated tasks if changes were made
-  if (needsMigration) {
-    console.log('Migrating tasks to add approvalStatus field...')
-    localStorage.setItem(TASKS_KEY, JSON.stringify(migratedTasks))
-    console.log('Migration complete!')
+// Helper to normalize task data between Supabase and LocalStorage
+const normalizeTask = (task) => {
+  if (!task) return null
+  return {
+    ...task,
+    dueDate: task.due_date || task.dueDate,
+    due_date: task.due_date || task.dueDate,
+    assigneeName: task.assignee_name || task.assigneeName,
+    assignee_name: task.assignee_name || task.assigneeName,
+    assignee_email: task.assignee_email || task.assigneeEmail || task.assignee,
+    approvalStatus: task.approval_status || task.approvalStatus,
+    approval_status: task.approval_status || task.approvalStatus,
   }
-  
-  return migratedTasks
 }
 
-// Get all tasks from localStorage
-export const getTasks = () => {
+// Get all tasks
+export const getTasks = async () => {
   try {
-    const tasks = localStorage.getItem(TASKS_KEY)
-    const parsedTasks = tasks ? JSON.parse(tasks) : []
-    // Run migration to fix old tasks
-    return migrateTasks(parsedTasks)
+    if (isConfigured) {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+      
+      if (error) throw error
+      return (data || []).map(normalizeTask)
+    } else {
+      const data = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      return data.map(normalizeTask)
+    }
   } catch (error) {
     console.error('Error loading tasks:', error)
     return []
@@ -55,26 +38,64 @@ export const getTasks = () => {
 }
 
 // Get single task by ID
-export const getTaskById = (id) => {
-  const tasks = getTasks()
-  return tasks.find(task => task.id === id)
+export const getTaskById = async (id) => {
+  try {
+    if (isConfigured) {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .eq('id', id)
+        .single()
+      
+      if (error) throw error
+      return normalizeTask(data)
+    } else {
+      const tasks = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      return normalizeTask(tasks.find(t => t.id == id))
+    }
+  } catch (error) {
+    console.error('Error loading task by ID:', error)
+    return null
+  }
 }
 
 // Add new task
-export const addTask = (taskData) => {
+export const addTask = async (taskData) => {
   try {
-    const tasks = getTasks()
-    const newTask = {
-      id: generateTaskId(),
-      ...taskData,
-      status: taskData.status || 'new',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+    if (isConfigured) {
+      const { data, error } = await supabase
+        .from('tasks')
+        .insert([
+          {
+            title: taskData.title,
+            description: taskData.description,
+            assignee_email: taskData.assignee || taskData.assignee_email,
+            assignee_name: taskData.assigneeName || taskData.assignee_name,
+            priority: taskData.priority,
+            status: taskData.status || 'new',
+            category: taskData.category,
+            due_date: taskData.dueDate || taskData.due_date,
+            approval_status: taskData.approvalStatus || 'approved',
+            created_by: taskData.createdBy || taskData.created_by
+          }
+        ])
+        .select()
+      
+      if (error) throw error
+      return { success: true, task: normalizeTask(data[0]) }
+    } else {
+      const tasks = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      const newTask = {
+        ...taskData,
+        id: Date.now(),
+        createdAt: new Date().toISOString(),
+        status: taskData.status || 'new',
+        approvalStatus: taskData.approvalStatus || 'approved'
+      }
+      tasks.push(newTask)
+      localStorage.setItem(LS_KEY, JSON.stringify(tasks))
+      return { success: true, task: normalizeTask(newTask) }
     }
-    
-    tasks.push(newTask)
-    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks))
-    return { success: true, task: newTask }
   } catch (error) {
     console.error('Error adding task:', error)
     return { success: false, error: error.message }
@@ -82,23 +103,29 @@ export const addTask = (taskData) => {
 }
 
 // Update existing task
-export const updateTask = (id, updates) => {
+export const updateTask = async (id, updates) => {
   try {
-    const tasks = getTasks()
-    const index = tasks.findIndex(task => task.id === id)
-    
-    if (index === -1) {
-      return { success: false, error: 'Task not found' }
+    if (isConfigured) {
+      const { data, error } = await supabase
+        .from('tasks')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+      
+      if (error) throw error
+      return { success: true, task: normalizeTask(data[0]) }
+    } else {
+      let tasks = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      const index = tasks.findIndex(t => t.id == id)
+      if (index === -1) return { success: false, error: 'Task not found' }
+      
+      tasks[index] = { ...tasks[index], ...updates, updatedAt: new Date().toISOString() }
+      localStorage.setItem(LS_KEY, JSON.stringify(tasks))
+      return { success: true, task: normalizeTask(tasks[index]) }
     }
-    
-    tasks[index] = {
-      ...tasks[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    }
-    
-    localStorage.setItem(TASKS_KEY, JSON.stringify(tasks))
-    return { success: true, task: tasks[index] }
   } catch (error) {
     console.error('Error updating task:', error)
     return { success: false, error: error.message }
@@ -106,22 +133,27 @@ export const updateTask = (id, updates) => {
 }
 
 // Update task status
-export const updateTaskStatus = (id, status) => {
-  return updateTask(id, { status })
+export const updateTaskStatus = async (id, status) => {
+  return await updateTask(id, { status })
 }
 
 // Delete task
-export const deleteTask = (id) => {
+export const deleteTask = async (id) => {
   try {
-    const tasks = getTasks()
-    const filteredTasks = tasks.filter(task => task.id !== id)
-    
-    if (tasks.length === filteredTasks.length) {
-      return { success: false, error: 'Task not found' }
+    if (isConfigured) {
+      const { error } = await supabase
+        .from('tasks')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } else {
+      let tasks = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      tasks = tasks.filter(t => t.id != id)
+      localStorage.setItem(LS_KEY, JSON.stringify(tasks))
+      return { success: true }
     }
-    
-    localStorage.setItem(TASKS_KEY, JSON.stringify(filteredTasks))
-    return { success: true }
   } catch (error) {
     console.error('Error deleting task:', error)
     return { success: false, error: error.message }
@@ -129,108 +161,31 @@ export const deleteTask = (id) => {
 }
 
 // Get tasks by status
-export const getTasksByStatus = (status) => {
-  const tasks = getTasks()
-  return tasks.filter(task => task.status === status)
+export const getTasksByStatus = async (status) => {
+  const allTasks = await getTasks()
+  return allTasks.filter(t => t.status === status)
 }
 
 // Get tasks by assignee
-export const getTasksByAssignee = (email) => {
-  const tasks = getTasks()
-  return tasks.filter(task => task.assignee === email)
+export const getTasksByAssignee = async (email) => {
+  const allTasks = await getTasks()
+  return allTasks.filter(task => (task.assignee_email || task.assignee) === email)
 }
 
 // Get task statistics
-export const getTaskStats = () => {
-  const tasks = getTasks()
-  return {
-    total: tasks.length,
-    new: tasks.filter(t => t.status === 'new').length,
-    inProgress: tasks.filter(t => t.status === 'in-progress').length,
-    completed: tasks.filter(t => t.status === 'completed').length,
-    failed: tasks.filter(t => t.status === 'failed').length,
-  }
-}
-
-// Initialize with sample tasks if empty
-export const initializeSampleTasks = () => {
-  const tasks = getTasks()
-  if (tasks.length === 0) {
-    const sampleTasks = [
-      {
-        id: generateTaskId(),
-        title: 'Design new landing page',
-        description: 'Create a modern, responsive landing page with hero section, features, and testimonials',
-        assignee: 'employee1@company.com',
-        assigneeName: 'Aarav Sharma',
-        priority: 'high',
-        status: 'in-progress',
-        category: 'design',
-        dueDate: '2025-12-30',
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'admin@example.com',
-      },
-      {
-        id: generateTaskId(),
-        title: 'Implement user authentication',
-        description: 'Add JWT-based authentication with login, signup, and password reset functionality',
-        assignee: 'employee2@company.com',
-        assigneeName: 'Priya Patel',
-        priority: 'urgent',
-        status: 'in-progress',
-        category: 'development',
-        dueDate: '2025-12-28',
-        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'admin@example.com',
-      },
-      {
-        id: generateTaskId(),
-        title: 'Write API documentation',
-        description: 'Document all REST API endpoints with examples and response formats',
-        assignee: 'employee3@company.com',
-        assigneeName: 'Rohan Kumar',
-        priority: 'medium',
-        status: 'completed',
-        category: 'development',
-        dueDate: '2025-12-25',
-        createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        createdBy: 'admin@example.com',
-      },
-      {
-        id: generateTaskId(),
-        title: 'Set up CI/CD pipeline',
-        description: 'Configure GitHub Actions for automated testing and deployment',
-        assignee: 'employee1@company.com',
-        assigneeName: 'Aarav Sharma',
-        priority: 'high',
-        status: 'new',
-        category: 'development',
-        dueDate: '2026-01-05',
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        createdBy: 'admin@example.com',
-      },
-      {
-        id: generateTaskId(),
-        title: 'Create marketing materials',
-        description: 'Design social media graphics and email templates for product launch',
-        assignee: 'employee4@company.com',
-        assigneeName: 'Ananya Singh',
-        priority: 'medium',
-        status: 'new',
-        category: 'marketing',
-        dueDate: '2026-01-10',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        createdBy: 'admin@example.com',
-      },
-    ]
+export const getTaskStats = async () => {
+  try {
+    const tasks = await getTasks()
     
-    localStorage.setItem(TASKS_KEY, JSON.stringify(sampleTasks))
-    return sampleTasks
+    return {
+      total: tasks.length,
+      new: tasks.filter(t => t.status === 'new').length,
+      inProgress: tasks.filter(t => t.status === 'in-progress').length,
+      completed: tasks.filter(t => t.status === 'completed').length,
+      failed: tasks.filter(t => t.status === 'failed').length,
+    }
+  } catch (error) {
+    console.error('Error getting task stats:', error)
+    return { total: 0, new: 0, inProgress: 0, completed: 0, failed: 0 }
   }
-  return tasks
 }

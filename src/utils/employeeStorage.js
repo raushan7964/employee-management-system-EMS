@@ -1,17 +1,33 @@
-// Employee Storage Utilities - Centralized employee management with localStorage
+import { supabase, isConfigured } from './supabase'
 
-const EMPLOYEES_KEY = 'employeeMS_employees'
+const LS_KEY = 'employees'
 
-// Generate unique ID for employees
-const generateEmployeeId = () => {
-  return `emp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+// Helper to normalize employee data between Supabase and LocalStorage
+const normalizeEmployee = (emp) => {
+  if (!emp) return null
+  return {
+    ...emp,
+    firstName: emp.first_name || emp.firstName,
+    lastName: emp.last_name || emp.lastName,
+    first_name: emp.first_name || emp.firstName,
+    last_name: emp.last_name || emp.lastName,
+  }
 }
 
-// Get all employees from localStorage
-export const getEmployees = () => {
+// Get all employees
+export const getEmployees = async () => {
   try {
-    const employees = localStorage.getItem(EMPLOYEES_KEY)
-    return employees ? JSON.parse(employees) : []
+    if (isConfigured) {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+      
+      if (error) throw error
+      return (data || []).map(normalizeEmployee)
+    } else {
+      const data = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      return data.map(normalizeEmployee)
+    }
   } catch (error) {
     console.error('Error loading employees:', error)
     return []
@@ -19,46 +35,90 @@ export const getEmployees = () => {
 }
 
 // Get single employee by ID
-export const getEmployeeById = (id) => {
-  const employees = getEmployees()
-  return employees.find(emp => emp.id === id)
+export const getEmployeeById = async (id) => {
+  try {
+    if (isConfigured) {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('id', id)
+        .single()
+      
+      if (error) throw error
+      return normalizeEmployee(data)
+    } else {
+      const employees = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      return normalizeEmployee(employees.find(e => e.id == id))
+    }
+  } catch (error) {
+    console.error('Error loading employee by ID:', error)
+    return null
+  }
 }
 
 // Get employee by email
-export const getEmployeeByEmail = (email) => {
-  const employees = getEmployees()
-  return employees.find(emp => emp.email === email)
+export const getEmployeeByEmail = async (email) => {
+  try {
+    if (isConfigured) {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('*')
+        .eq('email', email)
+        .single()
+      
+      if (error) throw error
+      return normalizeEmployee(data)
+    } else {
+      const employees = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      return normalizeEmployee(employees.find(e => e.email === email))
+    }
+  } catch (error) {
+    console.error('Error loading employee by email:', error)
+    return null
+  }
 }
 
 // Add new employee
-export const addEmployee = (employeeData) => {
+export const addEmployee = async (employeeData) => {
   try {
-    const employees = getEmployees()
-    
-    // Check if email already exists
-    if (employees.some(emp => emp.email === employeeData.email)) {
-      return { success: false, error: 'Email already exists' }
+    if (isConfigured) {
+      const { data, error } = await supabase
+        .from('employees')
+        .insert([
+          {
+            first_name: employeeData.firstName || employeeData.first_name,
+            last_name: employeeData.lastName || employeeData.last_name,
+            email: employeeData.email,
+            password: employeeData.password,
+            department: employeeData.department,
+            role: employeeData.role,
+            avatar: employeeData.avatar
+          }
+        ])
+        .select()
+      
+      if (error) {
+        if (error.code === '23505') return { success: false, error: 'Email already exists' }
+        throw error
+      }
+      
+      return { success: true, employee: normalizeEmployee(data[0]) }
+    } else {
+      const employees = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      if (employees.some(e => e.email === employeeData.email)) {
+        return { success: false, error: 'Email already exists' }
+      }
+      
+      const newEmployee = {
+        ...employeeData,
+        id: Date.now(),
+        firstName: employeeData.firstName || employeeData.first_name,
+        lastName: employeeData.lastName || employeeData.last_name,
+      }
+      employees.push(newEmployee)
+      localStorage.setItem(LS_KEY, JSON.stringify(employees))
+      return { success: true, employee: normalizeEmployee(newEmployee) }
     }
-    
-    const newEmployee = {
-      id: generateEmployeeId(),
-      ...employeeData,
-      taskCount: {
-        new: 0,
-        active: 0,
-        completed: 0,
-        failed: 0,
-      },
-      createdAt: new Date().toISOString(),
-    }
-    
-    employees.push(newEmployee)
-    localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees))
-    
-    // Update AuthContext data
-    updateAuthContextEmployees(employees)
-    
-    return { success: true, employee: newEmployee }
   } catch (error) {
     console.error('Error adding employee:', error)
     return { success: false, error: error.message }
@@ -66,34 +126,44 @@ export const addEmployee = (employeeData) => {
 }
 
 // Update existing employee
-export const updateEmployee = (id, updates) => {
+export const updateEmployee = async (id, updates) => {
   try {
-    const employees = getEmployees()
-    const index = employees.findIndex(emp => emp.id === id)
-    
-    if (index === -1) {
-      return { success: false, error: 'Employee not found' }
-    }
-    
-    // If email is being updated, check for duplicates
-    if (updates.email && updates.email !== employees[index].email) {
-      if (employees.some(emp => emp.email === updates.email)) {
-        return { success: false, error: 'Email already exists' }
+    if (isConfigured) {
+      const { data, error } = await supabase
+        .from('employees')
+        .update({
+          first_name: updates.firstName || updates.first_name,
+          last_name: updates.lastName || updates.last_name,
+          email: updates.email,
+          password: updates.password,
+          department: updates.department,
+          role: updates.role,
+          avatar: updates.avatar,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+      
+      if (error) {
+        if (error.code === '23505') return { success: false, error: 'Email already exists' }
+        throw error
       }
+      
+      return { success: true, employee: normalizeEmployee(data[0]) }
+    } else {
+      let employees = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      const index = employees.findIndex(e => e.id == id)
+      if (index === -1) return { success: false, error: 'Employee not found' }
+      
+      employees[index] = { 
+        ...employees[index], 
+        ...updates,
+        firstName: updates.firstName || updates.first_name || employees[index].firstName,
+        lastName: updates.lastName || updates.last_name || employees[index].lastName,
+      }
+      localStorage.setItem(LS_KEY, JSON.stringify(employees))
+      return { success: true, employee: normalizeEmployee(employees[index]) }
     }
-    
-    employees[index] = {
-      ...employees[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    }
-    
-    localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(employees))
-    
-    // Update AuthContext data
-    updateAuthContextEmployees(employees)
-    
-    return { success: true, employee: employees[index] }
   } catch (error) {
     console.error('Error updating employee:', error)
     return { success: false, error: error.message }
@@ -101,120 +171,42 @@ export const updateEmployee = (id, updates) => {
 }
 
 // Delete employee
-export const deleteEmployee = (id) => {
+export const deleteEmployee = async (id) => {
   try {
-    const employees = getEmployees()
-    const filteredEmployees = employees.filter(emp => emp.id !== id)
-    
-    if (employees.length === filteredEmployees.length) {
-      return { success: false, error: 'Employee not found' }
+    if (isConfigured) {
+      const { error } = await supabase
+        .from('employees')
+        .delete()
+        .eq('id', id)
+      
+      if (error) throw error
+      return { success: true }
+    } else {
+      let employees = JSON.parse(localStorage.getItem(LS_KEY) || '[]')
+      employees = employees.filter(e => e.id != id)
+      localStorage.setItem(LS_KEY, JSON.stringify(employees))
+      return { success: true }
     }
-    
-    localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(filteredEmployees))
-    
-    // Update AuthContext data
-    updateAuthContextEmployees(filteredEmployees)
-    
-    return { success: true }
   } catch (error) {
     console.error('Error deleting employee:', error)
     return { success: false, error: error.message }
   }
 }
 
-// Update AuthContext localStorage
-const updateAuthContextEmployees = (employees) => {
+// Get employee statistics
+export const getEmployeeStats = async () => {
   try {
-    const authData = localStorage.getItem('employees')
-    if (authData) {
-      const data = JSON.parse(authData)
-      data.employees = employees
-      localStorage.setItem('employees', JSON.stringify(data))
-    } else {
-      localStorage.setItem('employees', JSON.stringify({ employees }))
+    const employees = await getEmployees()
+    
+    return {
+      total: employees.length,
+      byDepartment: employees.reduce((acc, emp) => {
+        acc[emp.department] = (acc[emp.department] || 0) + 1
+        return acc
+      }, {}),
     }
   } catch (error) {
-    console.error('Error updating auth context:', error)
-  }
-}
-
-// Initialize with sample employees if empty
-export const initializeSampleEmployees = () => {
-  const employees = getEmployees()
-  if (employees.length === 0) {
-    const sampleEmployees = [
-      {
-        id: generateEmployeeId(),
-        firstName: 'Aarav',
-        lastName: 'Sharma',
-        email: 'employee1@company.com',
-        password: '123',
-        department: 'Engineering',
-        role: 'Senior Developer',
-        taskCount: { new: 1, active: 1, completed: 5, failed: 0 },
-        createdAt: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: generateEmployeeId(),
-        firstName: 'Priya',
-        lastName: 'Patel',
-        email: 'employee2@company.com',
-        password: '123',
-        department: 'Engineering',
-        role: 'Full Stack Developer',
-        taskCount: { new: 0, active: 1, completed: 8, failed: 0 },
-        createdAt: new Date(Date.now() - 75 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: generateEmployeeId(),
-        firstName: 'Rohan',
-        lastName: 'Kumar',
-        email: 'employee3@company.com',
-        password: '123',
-        department: 'Engineering',
-        role: 'Backend Developer',
-        taskCount: { new: 0, active: 0, completed: 12, failed: 1 },
-        createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: generateEmployeeId(),
-        firstName: 'Ananya',
-        lastName: 'Singh',
-        email: 'employee4@company.com',
-        password: '123',
-        department: 'Marketing',
-        role: 'Marketing Manager',
-        taskCount: { new: 1, active: 0, completed: 6, failed: 0 },
-        createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-      {
-        id: generateEmployeeId(),
-        firstName: 'Vikram',
-        lastName: 'Reddy',
-        email: 'employee5@company.com',
-        password: '123',
-        department: 'Design',
-        role: 'UI/UX Designer',
-        taskCount: { new: 0, active: 0, completed: 4, failed: 0 },
-        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ]
-    
-    localStorage.setItem(EMPLOYEES_KEY, JSON.stringify(sampleEmployees))
-    updateAuthContextEmployees(sampleEmployees)
-    return sampleEmployees
-  }
-  return employees
-}
-
-// Get employee statistics
-export const getEmployeeStats = () => {
-  const employees = getEmployees()
-  return {
-    total: employees.length,
-    byDepartment: employees.reduce((acc, emp) => {
-      acc[emp.department] = (acc[emp.department] || 0) + 1
-      return acc
-    }, {}),
+    console.error('Error getting employee stats:', error)
+    return { total: 0, byDepartment: {} }
   }
 }
